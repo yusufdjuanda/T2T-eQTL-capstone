@@ -1,0 +1,45 @@
+nextflow_pipeline {
+
+    name "Whole pipeline: both modes"
+    script "../main.nf"
+
+    test("reproduce mode on the synthetic bundle publishes the analysis") {
+        when {
+            params {
+                mode = 'reproduce'
+                bundle = "${baseDir}/tests/data/bundle"
+                nboot = 20
+                nboot_genes = 10
+            }
+        }
+        then {
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 3      // PAIRED_TEST, GENE_SETS, FIGURES
+        }
+    }
+
+    test("full mode (stub): wiring from SRA download through alignment to the bundle export") {
+        options "-stub"
+        when {
+            params {
+                mode = 'full'
+                raw_dir = "${baseDir}/tests/data/stub/raw"
+                processed_dir = "${outputDir}/processed"
+                samples = "${baseDir}/tests/data/stub/samples.tsv"
+                samplesheet = "${baseDir}/tests/data/stub/samplesheet.csv"
+                chrom_names = "${baseDir}/metadata/chrom-names-chm13v2.0.tsv"
+                chromosomes = 'chr21,chr22'
+            }
+        }
+        then {
+            assert workflow.success
+            def done = workflow.trace.succeeded().collect { t -> t.name.tokenize(' ')[0] } as Set
+            ['FETCH_SRA', 'FASTERQ_DUMP', 'STAR_ALIGN', 'SALMON_QUANT', 'MERGE_EXPRESSION', 'SUBSET_GENOTYPES',
+             'MATCH_VARIANTS', 'TENSORQTL_CIS', 'COMPARE_EFFECTS', 'EXPORT_BUNDLE', 'PAIRED_TEST', 'FIGURES'].each { p ->
+                assert done.any { n -> n.endsWith(p) }
+            }
+            // 2 runs x 2 references
+            assert workflow.trace.succeeded().count { t -> t.name.contains('STAR_ALIGN') } == 4
+        }
+    }
+}
