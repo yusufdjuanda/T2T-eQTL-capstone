@@ -1,30 +1,28 @@
-# Stage 07 (figures): three figures for the MAGE comparison of T2T-CHM13 and GRCh38, straight from the stage 05-06 tables.
+# Three figures for the MAGE comparison of T2T-CHM13 and GRCh38.
 #
-#   pixi run figures          (same as: pixi run Rscript scripts/07-figures/make-figures.R [cohort=mage])
+#   Rscript scripts/make_figures.R <bundle> <paired-test dir> <gene-sets table> <output dir>
 #
-# Inputs, in results/06-compare/eqtl-comparison/<cohort>/:
-#   {star,salmon}-matched/genes.tsv                      eGene status per reference (compare-eqtl.py)
-#   paired-matched/effects-chm13v2.0-vs-grch38-star.tsv  same-variant effects on both references (paired-test.py)
-#   gene-sets/changed-chm13v2.0-vs-grch38.tsv            changed genes and their tier (define-gene-sets.py)
-# Writes results/07-figures/fig0N-*.{png,pdf}:
+# Called by the pipeline process FIGURES. Inputs:
+#   <bundle>/{star,salmon}/egenes.tsv           eGene status per reference (compare_eqtl.py, via export_bundle.py)
+#   <paired-test dir>/effects-star.tsv          same-variant effects on both references (paired_test.py)
+#   <gene-sets table>                           changed genes and their tier (gene_sets.py)
+# Writes <output dir>/fig0N-*.{png,pdf}:
 #   fig01-egenes           eGenes (FDR 5%) per reference and quantification method
 #   fig02-effects          eQTL effect of the same variant on GRCh38 (x) and T2T (y); changed genes highlighted
 #   fig03-changed-genes    changed genes (main set) by region class
 # Style: journal figures (<= 183 mm wide, 7 pt text, no titles), Okabe-Ito colours.
 suppressPackageStartupMessages({ library(ggplot2); library(data.table); library(scales) })
 args <- commandArgs(TRUE)
-cohort <- if (length(args) >= 1) args[1] else "mage"
-root <- normalizePath(file.path(dirname(sub("--file=", "", grep("--file=", commandArgs(FALSE), value = TRUE))), "../.."))
-cd <- file.path(root, "results/06-compare/eqtl-comparison", cohort)
-fd <- file.path(root, "results/07-figures")
+if (length(args) != 4) stop("usage: make_figures.R <bundle> <paired-test dir> <gene-sets table> <output dir>")
+bundle <- args[1]; paired <- args[2]; gene_sets <- args[3]; fd <- args[4]
 dir.create(fd, showWarnings = FALSE, recursive = TRUE)
-rd <- function(...) fread(file.path(cd, ...), sep = "\t", colClasses = list(character = "gene_ncbi"))
+rd <- function(path) fread(path, sep = "\t", colClasses = list(character = "gene_ncbi"))
 
 ref_lab <- c("chm13v2.0" = "T2T-CHM13", "grch38" = "GRCh38")
 ref_col <- c("T2T-CHM13" = "#0072B2", "GRCh38" = "#D55E00")
 reg_lab <- c(other = "Other", sd = "Segmental\nduplication", t2t_new_sequence = "T2T-only\nsequence")
 
-# TeX Gyre Heros (Helvetica metrics; scripts/00-setup/install-fonts.sh) if installed, else the default sans font
+# TeX Gyre Heros (Helvetica metrics; scripts/install_fonts.sh) if installed, else the default sans font
 FONT <- if (any(grepl("TeX Gyre Heros", tryCatch(system("fc-list : family", intern = TRUE), error = function(e) ""))))
   "TeX Gyre Heros" else "sans"
 pdf(NULL)  # no stray Rplots.pdf
@@ -41,7 +39,7 @@ save_nat <- function(p, name, w_mm, h_mm) {
 
 # Fig 1: eGenes per reference ---------------------------------------------------------------------------------------
 eg <- rbindlist(lapply(c(star = "STAR", salmon = "salmon"), function(m) {
-  g <- rd(paste0(tolower(m), "-matched"), "genes.tsv")
+  g <- rd(file.path(bundle, tolower(m), "egenes.tsv"))
   data.table(method = m, ref = ref_lab, egenes = c(sum(g$egene_chm13v2.0, na.rm = TRUE), sum(g$egene_grch38, na.rm = TRUE)))
 }))
 eg[, method := factor(method, levels = c("STAR", "salmon"))]
@@ -54,8 +52,8 @@ p1 <- ggplot(eg, aes(method, egenes, fill = ref)) + geom_col(position = position
 save_nat(p1, "fig01-egenes", 70, 60)
 
 # Fig 2: same variant, two references -------------------------------------------------------------------------------
-ef <- rd("paired-matched", "effects-chm13v2.0-vs-grch38-star.tsv")[artefact_flag == FALSE]
-gs <- rd("gene-sets", "changed-chm13v2.0-vs-grch38.tsv")
+ef <- rd(file.path(paired, "effects-star.tsv"))[artefact_flag == FALSE]
+gs <- rd(gene_sets)
 ef[, grp := fifelse(gene_ncbi %in% gs[tier %in% c("core", "main"), gene_ncbi], "Changed", "Not changed")]
 n2 <- ef[, .N, by = grp]
 lab2 <- setNames(sprintf("%s (%s genes)", n2$grp, comma(n2$N)), n2$grp)
@@ -83,6 +81,6 @@ p3 <- ggplot(c3, aes(region, N)) + geom_col(width = 0.6, fill = "#0072B2") +
   labs(x = NULL, y = "Changed genes, T2T vs GRCh38") + nat
 save_nat(p3, "fig03-changed-genes", 70, 60)
 
-message(sprintf("%s: eGenes %s; %d genes compared, %d changed; figures in %s", cohort,
+message(sprintf("eGenes %s; %d genes compared, %d changed; figures in %s",
                 paste(sprintf("%s %s %s", eg$method, eg$ref, comma(eg$egenes)), collapse = ", "),
                 nrow(ef), nrow(ch), fd))

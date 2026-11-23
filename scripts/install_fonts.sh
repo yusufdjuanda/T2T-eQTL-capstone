@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install the figure font, TeX Gyre Heros 2.004 (Helvetica metrics; GUST e-foundry, GUST Font License), for the
-# current user. make-figures.R uses it when installed and falls back to the default sans font otherwise.
+# current user. make_figures.R uses it when installed and falls back to the default sans font otherwise.
 #
 #   pixi run fonts
 #
