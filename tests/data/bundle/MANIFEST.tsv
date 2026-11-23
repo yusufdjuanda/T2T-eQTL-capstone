@@ -1,0 +1,15 @@
+file
+genotypes/grch38.dosages.tsv.gz
+genotypes/t2t.dosages.tsv.gz
+salmon/covariates-chm13v2.0.tsv
+salmon/covariates-grch38.tsv
+salmon/effects-chm13v2.0-vs-grch38.tsv
+salmon/egenes.tsv
+salmon/phenotypes-chm13v2.0.bed.gz
+salmon/phenotypes-grch38.bed.gz
+star/covariates-chm13v2.0.tsv
+star/covariates-grch38.tsv
+star/effects-chm13v2.0-vs-grch38.tsv
+star/egenes.tsv
+star/phenotypes-chm13v2.0.bed.gz
+star/phenotypes-grch38.bed.gz
