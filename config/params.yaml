@@ -1,0 +1,29 @@
+# Analysis settings of the pipeline (workflow/nextflow/main.nf), the values behind the published results.
+# Every pixi task that runs the pipeline passes this file (-params-file config/params.yaml); change a setting here,
+# not in the code. Paths of the cluster inputs are in config/site.config (not committed).
+
+# --- reproduce mode -------------------------------------------------------------------------------------------
+# processed bundle downloaded by `pixi run download` (metadata/sources.tsv, row processed-mage)
+bundle: data/raw/mage-processed-v1
+
+# --- analysis (both modes) ------------------------------------------------------------------------------------
+# bootstrap calibration of the paired test: resamples of individuals, and the number of random genes checked
+nboot: 200
+nboot_genes: 300
+seed: 2026
+# smallest effect change kept in the main changed-gene set (SD of expression per allele, under STAR and salmon)
+effect_floor: 0.1
+
+# --- full mode (cluster) ----------------------------------------------------------------------------------------
+# autosomes only; chrX needs sex-aware genotype handling that this project does not do
+chromosomes: chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22
+# STAR --sjdbOverhang = read length - 1 (MAGE: 2 x 150 bp)
+star_overhang: 149
+# minimum minor allele frequency for pairing T2T and GRCh38 variants
+min_maf: 0.01
+# genotype principal components used as covariates (expression PCs: GTEx rule by sample size, make_covariates.py)
+n_genotype_pcs: 5
+# tensorQTL permutations per gene, and the FDR for eGenes
+nperm: 10000
+fdr: 0.05
+bundle_name: mage-processed-v1

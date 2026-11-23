@@ -1,4 +1,4 @@
-// Site settings for the cluster run (`-profile hpc`). Copy to config/site.config (not committed) and edit:
+// Site settings for the cluster run (`-profile hpc -c config/site.config`). Copy to config/site.config (not committed) and edit:
 //   cp config/site.config.example config/site.config
 // Every setting is optional; the defaults are the folders inside the project.
 
@@ -7,11 +7,10 @@ params {
     raw_dir       = '/path/to/project-storage/t2t-eqtl/data/raw'
     // Derived inputs reused between runs: star-references/<reference>/ (STAR references and indexes)
     processed_dir = '/path/to/project-storage/t2t-eqtl/data/processed'
-    // Pipeline outputs
-    outdir        = '/path/to/project-storage/t2t-eqtl/results'
-    // Parent of every task's TMPDIR. Do not use /tmp on a shared cluster node.
-    tmp_dir       = '/path/to/fast-scratch/t2t-eqtl/tmp'
 }
+
+// Pipeline outputs (the workflow's output block)
+outputDir = '/path/to/project-storage/t2t-eqtl/results'
 
 // Nextflow task folders (large: FASTQ and BAM files pass through here)
 workDir = '/path/to/fast-scratch/t2t-eqtl/work'

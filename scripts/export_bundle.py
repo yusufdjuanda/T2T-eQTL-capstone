@@ -4,11 +4,11 @@
 
 Called by the pipeline process EXPORT_BUNDLE at the end of the cluster run. The bundle holds what paired_test.py,
 gene_sets.py and make_figures.R need, and nothing that requires the cluster tools (no pgen files, no nominal tables).
-Expected --indir layout (staged by the pipeline):
-  geno/t2t.{pgen,pvar,psam}  geno/grch38.{pgen,pvar,psam}      matched-variant genotypes
-  <method>/effects.tsv                                         compare_effects.py output
-  <method>/genes.tsv                                           compare_eqtl.py output
-  <method>/<ref>/phenotypes.bed.gz  <method>/<ref>/covariates.tsv
+Expected files in --indir (staged by the pipeline):
+  t2t.matched.{pgen,pvar,psam}  grch38.matched.{pgen,pvar,psam}     matched-variant genotypes
+  <method>.effects.tsv                                            compare_effects.py output
+  <method>.genes.tsv                                              compare_eqtl.py output
+  <method>.<ref>.phenotypes.bed.gz  <method>.<ref>.covariates.tsv
 for method in star, salmon and ref in chm13v2.0, grch38. Bundle layout (--outdir):
   <method>/effects-chm13v2.0-vs-grch38.tsv    effect comparison per gene, with the phenotype and variant IDs
   <method>/egenes.tsv                         gene_ncbi, tested_<ref>, egene_<ref>, qval_<ref>
@@ -64,20 +64,20 @@ def main():
     variants = {"t2t": [], "grch38": []}
     for m in METHODS:
         (out / m).mkdir(exist_ok=True)
-        e = pd.read_csv(ind / m / "effects.tsv", sep="\t", dtype={"gene_ncbi": str})
+        e = pd.read_csv(ind / f"{m}.effects.tsv", sep="\t", dtype={"gene_ncbi": str})
         e.to_csv(out / m / "effects-chm13v2.0-vs-grch38.tsv", sep="\t", index=False, float_format="%.6g")
-        g = pd.read_csv(ind / m / "genes.tsv", sep="\t", dtype={"gene_ncbi": str}, low_memory=False)
+        g = pd.read_csv(ind / f"{m}.genes.tsv", sep="\t", dtype={"gene_ncbi": str}, low_memory=False)
         g[["gene_ncbi"] + EGENE_COLS].to_csv(out / m / "egenes.tsv", sep="\t", index=False, float_format="%.6g")
         variants["t2t"] += e.var_a.dropna().tolist()
         variants["grch38"] += e.var_b.dropna().tolist()
         for r, col in (("chm13v2.0", "pheno_a"), ("grch38", "pheno_b")):
-            ph = pd.read_csv(ind / m / r / "phenotypes.bed.gz", sep="\t")
+            ph = pd.read_csv(ind / f"{m}.{r}.phenotypes.bed.gz", sep="\t")
             ph = ph[ph.phenotype_id.isin(set(e[col].dropna()))]
             ph.to_csv(out / m / f"phenotypes-{r}.bed.gz", sep="\t", index=False, float_format="%.5g")
-            cov = pd.read_csv(ind / m / r / "covariates.tsv", sep="\t", index_col=0)
+            cov = pd.read_csv(ind / f"{m}.{r}.covariates.tsv", sep="\t", index_col=0)
             cov.to_csv(out / m / f"covariates-{r}.tsv", sep="\t", float_format="%.6g")
     for s, v in variants.items():
-        dosages(ind / "geno" / s, v).to_csv(out / "genotypes" / f"{s}.dosages.tsv.gz", sep="\t", na_rep="NA",
+        dosages(ind / f"{s}.matched", v).to_csv(out / "genotypes" / f"{s}.dosages.tsv.gz", sep="\t", na_rep="NA",
                                             float_format="%.0f")
 
     files = sorted(p for p in out.rglob("*") if p.is_file() and p.name != "MANIFEST.tsv")
