@@ -1,0 +1,13 @@
+# Apptainer image of this project, made from the Docker image (course lesson 08).
+# Build on Linux (or the cluster) after pushing the Docker image:
+#   apptainer build containers/t2t-eqtl-capstone.sif containers/apptainer.def
+# Or straight from a local Docker image, without this file:
+#   apptainer build containers/t2t-eqtl-capstone.sif docker-daemon://t2t-eqtl-capstone:0.2.0
+Bootstrap: docker
+From: ghcr.io/yusufdjuanda/t2t-eqtl-capstone:0.2.0
+
+%runscript
+    exec /entrypoint.sh "$@"
+
+%labels
+    Project t2t-eqtl-capstone
