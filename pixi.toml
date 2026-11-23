@@ -1,0 +1,78 @@
+[workspace]
+name = "t2t-eqtl-capstone"
+version = "0.1.0"
+description = "cis-eQTL mapping in MAGE lymphoblastoid cell lines on T2T-CHM13 and GRCh38 from the same reads"
+authors = ["Yusuf Maulana"]
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/yusufdjuanda/T2T-eQTL-capstone"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+# tested with pixi 0.67.2; the lock file format needs at least this version
+requires-pixi = ">=0.67"
+
+# One command per job a reader can run. Heavy stages (01-06) run on Slurm through `submit`; see README.md.
+[tasks]
+setup = { cmd = "bash scripts/00-setup/link-storage.sh", description = "Create data/, results/, logs/, work/ (links from config/site.env, or plain folders)" }
+fonts = { cmd = "bash scripts/00-setup/install-fonts.sh", description = "Install the figure font (TeX Gyre Heros) into ~/.local/share/fonts" }
+checksums = { cmd = "bash scripts/00-setup/checksums.sh write", description = "Record sha256 sums of the downloaded inputs in config/checksums/" }
+verify-data = { cmd = "bash scripts/00-setup/checksums.sh check", description = "Check the downloaded inputs against config/checksums/" }
+submit = { cmd = "bash scripts/submit.sh", description = "Submit a Slurm script from the project root with the site's partition: pixi run submit scripts/<stage>/<job>.sbatch <args>" }
+figures = { cmd = "Rscript scripts/07-figures/make-figures.R", description = "Draw the figures from the stage 05-06 tables (results/07-figures/)" }
+
+[dependencies]
+python = "3.11.*"
+pandas = ">=3.0.6,<4"
+matplotlib = ">=3.11.2,<4"
+gffread = ">=0.12.9,<0.13"
+openpyxl = ">=3.1.5,<4"
+ucsc-liftover = ">=482,<483"
+plink2 = ">=2.0.0a.7.8,<3"
+pytorch-cpu = ">=2.14.1,<3"
+scipy = ">=1.17.1,<2"
+pgenlib = ">=0.95.1,<0.96"
+pyarrow = ">=25.0.0,<26"
+seaborn = ">=0.13.2,<0.14"
+bx-python = ">=0.15.1,<0.16"
+pybigwig = ">=0.3.26,<0.4"
+pandas-plink = ">=2.3.2,<3"
+bioconductor-qvalue = ">=2.42.0,<3"
+rpy2 = ">=3.6.8,<4"
+graphviz = ">=14.1.2,<15"
+r-ggrepel = ">=0.9.8,<0.10"
+r-patchwork = ">=1.3.2,<2"
+"r-data.table" = ">=1.18.6.1,<2"
+r-scales = ">=1.4.0,<2"
+pandoc = ">=3.12.1,<4"
+
+# tensorQTL 1.0.10 and qtl 0.1.10 are vendored from PyPI wheels (sha256-checked) in envs/vendor/, because pixi
+# could not reach its conda-PyPI mapping service from the cluster this was developed on.
+[activation.env]
+PYTHONPATH = "$PIXI_PROJECT_ROOT/envs/vendor/tensorqtl-1.0.10:$PIXI_PROJECT_ROOT/envs/vendor/qtl-0.1.10"
+
+# Command-line tools of stages 01-06 (environment `bio`), pinned to the versions the published results were produced with (the cluster
+# modules star/2.7.11b, salmon/1.11.4, samtools/1.23.1, bcftools/1.23.1, bedtools/2.31.1, sra-tools/3.4.1,
+# minimap2/2.31, nextflow/25.10.4). Scripts load them with `t2t_env bio`
+# (scripts/lib/common.sh). A separate environment: these builds need older system libraries than the R/Python stack.
+[feature.bio.dependencies]
+star = "==2.7.11b"
+salmon = "==1.11.4"
+samtools = "==1.23.1"
+bcftools = "==1.23.1"
+bedtools = "==2.31.1"
+sra-tools = "==3.4.1"
+minimap2 = "==2.31"
+nextflow = "==25.10.4"
+
+# Static checks (CI and `pixi run -e lint lint`): Python syntax, shell syntax and ShellCheck errors.
+[feature.lint.dependencies]
+python = "3.11.*"
+shellcheck = ">=0.11.0,<0.12"
+
+[feature.lint.tasks]
+lint = { cmd = "bash scripts/00-setup/lint.sh", description = "Check Python and shell syntax, and ShellCheck errors" }
+
+[environments]
+bio = { features = ["bio"], no-default-feature = true }
+lint = { features = ["lint"], no-default-feature = true }
