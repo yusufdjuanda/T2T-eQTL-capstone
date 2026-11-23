@@ -1,60 +1,83 @@
+# Software environments and tasks of this project. Edit with `pixi add`; pixi records the exact versions it installed
+# in pixi.lock (commit both). `pixi install --locked` rebuilds them exactly.
+#
+#   default  Python, R, Quarto, Nextflow, nf-test, pytest: everything `pixi run reproduce` and the tests need.
+#            Linux and macOS (Apple silicon). On Windows use WSL2.
+#   qtl      default + tensorQTL's stack (PyTorch, pgenlib, rpy2/qvalue) and plink2: eQTL mapping. Linux only.
+#   bio      STAR, salmon, samtools, bcftools, bedtools, sra-tools, liftOver, gffread: alignment and genotypes.
+#            Linux only; pinned to the versions the published results were made with.
+#   lint     ShellCheck and Python, for the static checks.
 [workspace]
 name = "t2t-eqtl-capstone"
-version = "0.1.0"
-description = "cis-eQTL mapping in MAGE lymphoblastoid cell lines on T2T-CHM13 and GRCh38 from the same reads"
+version = "0.2.0"
+description = "Does the reference genome change eQTLs? cis-eQTLs on T2T-CHM13 and GRCh38 from the same MAGE reads"
 authors = ["Yusuf Maulana"]
 license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/yusufdjuanda/T2T-eQTL-capstone"
 channels = ["conda-forge", "bioconda"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "osx-arm64"]
 # tested with pixi 0.67.2; the lock file format needs at least this version
 requires-pixi = ">=0.67"
-
-# One command per job a reader can run. Heavy stages (01-06) run on Slurm through `submit`; see README.md.
-[tasks]
-setup = { cmd = "bash scripts/00-setup/link-storage.sh", description = "Create data/, results/, logs/, work/ (links from config/site.env, or plain folders)" }
-fonts = { cmd = "bash scripts/00-setup/install-fonts.sh", description = "Install the figure font (TeX Gyre Heros) into ~/.local/share/fonts" }
-checksums = { cmd = "bash scripts/00-setup/checksums.sh write", description = "Record sha256 sums of the downloaded inputs in config/checksums/" }
-verify-data = { cmd = "bash scripts/00-setup/checksums.sh check", description = "Check the downloaded inputs against config/checksums/" }
-submit = { cmd = "bash scripts/submit.sh", description = "Submit a Slurm script from the project root with the site's partition: pixi run submit scripts/<stage>/<job>.sbatch <args>" }
-figures = { cmd = "Rscript scripts/07-figures/make-figures.R", description = "Draw the figures from the stage 05-06 tables (results/07-figures/)" }
 
 [dependencies]
 python = "3.11.*"
 pandas = ">=3.0.6,<4"
-matplotlib = ">=3.11.2,<4"
-gffread = ">=0.12.9,<0.13"
-openpyxl = ">=3.1.5,<4"
-ucsc-liftover = ">=482,<483"
-plink2 = ">=2.0.0a.7.8,<3"
-pytorch-cpu = ">=2.14.1,<3"
+numpy = ">=2.3,<3"
 scipy = ">=1.17.1,<2"
-pgenlib = ">=0.95.1,<0.96"
-pyarrow = ">=25.0.0,<26"
-seaborn = ">=0.13.2,<0.14"
-bx-python = ">=0.15.1,<0.16"
-pybigwig = ">=0.3.26,<0.4"
-pandas-plink = ">=2.3.2,<3"
-bioconductor-qvalue = ">=2.42.0,<3"
-rpy2 = ">=3.6.8,<4"
-graphviz = ">=14.1.2,<15"
-r-ggrepel = ">=0.9.8,<0.10"
-r-patchwork = ">=1.3.2,<2"
+r-base = ">=4.5,<4.6"
+r-ggplot2 = ">=4.0,<5"
 "r-data.table" = ">=1.18.6.1,<2"
 r-scales = ">=1.4.0,<2"
-pandoc = ">=3.12.1,<4"
+quarto = ">=1.9,<2"
+jupyterlab = ">=4,<5"
+ipykernel = ">=7,<8"
+nextflow = "==26.10.7"
+nf-test = "==0.9.5"
+pytest = ">=9,<10"
 
-# tensorQTL 1.0.10 and qtl 0.1.10 are vendored from PyPI wheels (sha256-checked) in envs/vendor/, because pixi
+[tasks]
+download = { cmd = "python scripts/download_data.py", description = "Download the processed MAGE bundle (release asset) and verify its checksums" }
+pipeline = { cmd = "nextflow run workflow/nextflow/main.nf -profile local -params-file config/params.yaml --mode reproduce -resume", depends-on = ["download"], description = "Paired test, changed-gene sets and figures from the processed bundle (Nextflow, local)" }
+report = { cmd = "quarto render reports/t2t-eqtl-report.qmd", depends-on = ["pipeline"], description = "Render the Quarto report (reports/t2t-eqtl-report.html)" }
+reproduce = { depends-on = ["download", "pipeline", "report"], description = "Rebuild every result and the report from the published data, with one command" }
+
+test-python = { cmd = "pytest tests/python", description = "Unit tests of the scripts (pytest)" }
+test-nf = { cmd = "nf-test test --verbose", description = "Tests of the Nextflow processes and workflows (nf-test)" }
+stub-full = { cmd = "nextflow run workflow/nextflow/main.nf -profile local,test -stub-run", description = "Check the wiring of the full cluster pipeline (alignment to export) with stubs, no data" }
+test = { depends-on = ["test-python", "test-nf", "stub-full"], description = "All tests" }
+
+pipeline-full = { cmd = "nextflow run workflow/nextflow/main.nf -profile hpc -c config/site.config -params-file config/params.yaml --mode full -resume", description = "The full analysis from raw reads on a Slurm cluster (docs/cluster.md)" }
+check-inputs = { cmd = "bash scripts/check_inputs.sh check", description = "Verify the cluster inputs in data/raw/ against metadata/checksums-cluster-inputs.sha256" }
+fetch-t2t-panel = { cmd = "bash scripts/fetch_t2t_panel.sh", description = "Download the 1000 Genomes T2T-CHM13 genotype panel (~30 GB)" }
+fetch-grch38-panel = { cmd = "bash scripts/fetch_grch38_panel.sh", description = "Download the 1000 Genomes GRCh38 genotype panel (~100 GB)" }
+fonts = { cmd = "bash scripts/install_fonts.sh", description = "Install the figure font (TeX Gyre Heros) into ~/.local/share/fonts (optional)" }
+versions = { cmd = "pixi list --environment default > docs/software-versions.txt", description = "Record the exact package versions of the default environment in docs/software-versions.txt" }
+export-conda = { cmd = "pixi workspace export conda-environment --environment default envs/environment.yml", description = "Export the default environment for Conda users (envs/environment.yml)" }
+
+[feature.qtl]
+platforms = ["linux-64"]
+
+[feature.qtl.dependencies]
+pytorch-cpu = ">=2.14.1,<3"
+pgenlib = ">=0.95.1,<0.96"
+pyarrow = ">=25.0.0,<26"
+pandas-plink = ">=2.3.2,<3"
+rpy2 = ">=3.6.8,<4"
+bioconductor-qvalue = ">=2.42.0,<3"
+plink2 = ">=2.0.0a.7.8,<3"
+
+# tensorQTL 1.0.10 and qtl 0.1.10 are vendored from their PyPI wheels (sha256-checked) in envs/vendor/, because pixi
 # could not reach its conda-PyPI mapping service from the cluster this was developed on.
-[activation.env]
+[feature.qtl.activation.env]
 PYTHONPATH = "$PIXI_PROJECT_ROOT/envs/vendor/tensorqtl-1.0.10:$PIXI_PROJECT_ROOT/envs/vendor/qtl-0.1.10"
 
-# Command-line tools of stages 01-06 (environment `bio`), pinned to the versions the published results were produced with (the cluster
-# modules star/2.7.11b, salmon/1.11.4, samtools/1.23.1, bcftools/1.23.1, bedtools/2.31.1, sra-tools/3.4.1,
-# minimap2/2.31, nextflow/25.10.4). Scripts load them with `t2t_env bio`
-# (scripts/lib/common.sh). A separate environment: these builds need older system libraries than the R/Python stack.
+# Pinned to the cluster modules the published results were produced with. A separate environment without the default
+# feature: these builds need older system libraries than the R/Python stack.
+[feature.bio]
+platforms = ["linux-64"]
+
 [feature.bio.dependencies]
 star = "==2.7.11b"
 salmon = "==1.11.4"
@@ -62,17 +85,20 @@ samtools = "==1.23.1"
 bcftools = "==1.23.1"
 bedtools = "==2.31.1"
 sra-tools = "==3.4.1"
-minimap2 = "==2.31"
-nextflow = "==25.10.4"
+ucsc-liftover = ">=482,<483"
+gffread = ">=0.12.9,<0.13"
 
-# Static checks (CI and `pixi run -e lint lint`): Python syntax, shell syntax and ShellCheck errors.
+[feature.lint]
+platforms = ["linux-64", "osx-arm64"]
+
 [feature.lint.dependencies]
 python = "3.11.*"
 shellcheck = ">=0.11.0,<0.12"
 
 [feature.lint.tasks]
-lint = { cmd = "bash scripts/00-setup/lint.sh", description = "Check Python and shell syntax, and ShellCheck errors" }
+lint = { cmd = "bash scripts/lint.sh", description = "Static checks: Python and shell syntax, ShellCheck errors, no cluster paths, metadata tables" }
 
 [environments]
+qtl = { features = ["qtl"] }
 bio = { features = ["bio"], no-default-feature = true }
 lint = { features = ["lint"], no-default-feature = true }
