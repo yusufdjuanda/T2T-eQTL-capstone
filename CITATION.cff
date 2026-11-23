@@ -1,14 +1,16 @@
 cff-version: 1.2.0
 message: "If you use this code or its results, please cite it as below."
 type: software
-title: "T2T-eQTL-capstone: cis-eQTLs on T2T-CHM13 and GRCh38 in MAGE lymphoblastoid cell lines"
+title: "T2T-eQTL-capstone: does the reference genome change eQTLs? T2T-CHM13 vs GRCh38 in MAGE"
 abstract: >-
-  RNA-seq of 731 MAGE lymphoblastoid cell lines and 1000 Genomes genotypes, processed from the same raw reads on
-  T2T-CHM13v2.0 and GRCh38, to measure which cis-eQTLs change with the reference genome.
+  RNA-seq of 731 MAGE lymphoblastoid cell lines and their 1000 Genomes genotypes, processed from the same raw reads on
+  T2T-CHM13v2.0 and GRCh38, to find which cis-eQTLs change with the reference genome. A Nextflow pipeline runs the
+  full analysis on a cluster; `pixi run reproduce` reruns the paired test, the changed-gene sets, the figures and the
+  report from the published processed data.
 authors:
   - family-names: Maulana
     given-names: Yusuf
-version: 0.1.0
+version: 0.2.0
 license: MIT
 repository-code: "https://github.com/yusufdjuanda/T2T-eQTL-capstone"
 keywords:
@@ -17,14 +19,30 @@ keywords:
   - reference genome
   - segmental duplications
   - lymphoblastoid cell lines
+  - Nextflow
 references:
   - type: article
-    title: "Molecular and genetic architecture of human gene expression across diverse ancestries (MAGE)"
+    title: "Sources of gene expression variation in a globally diverse human cohort"
     authors:
       - family-names: Taylor
         given-names: Dylan J.
+      - name: "et al."
     journal: "Nature"
+    volume: 632
+    start: 122
+    end: 130
     year: 2024
+    doi: "10.1038/s41586-024-07708-2"
+  - type: article
+    title: "The complete sequence of a human genome"
+    authors:
+      - family-names: Nurk
+        given-names: Sergey
+      - name: "et al."
+    journal: "Science"
+    volume: 376
+    year: 2022
+    doi: "10.1126/science.abj6987"
   - type: software
     title: "tensorQTL"
     authors:
