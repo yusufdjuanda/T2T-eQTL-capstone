@@ -1,0 +1,3 @@
+# SHA-256 of every file of the release asset mage-processed-v1, as unpacked in data/raw/mage-processed-v1/.
+# Written by the cluster run (process EXPORT_BUNDLE, results/release/checksums.sha256) and copied here when the
+# asset is published; `pixi run download` checks the downloaded files against these lines.
