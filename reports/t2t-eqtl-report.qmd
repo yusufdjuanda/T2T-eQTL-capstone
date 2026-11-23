@@ -1,0 +1,176 @@
+---
+title: "Does the reference genome change eQTLs?"
+subtitle: "cis-eQTLs on T2T-CHM13 and GRCh38 from the same MAGE reads"
+author: "Yusuf Maulana"
+date: today
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: true
+bibliography: references.bib
+jupyter: python3
+execute:
+  echo: false
+---
+
+```{python}
+#| label: setup
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import yaml
+from IPython.display import Markdown, display
+
+# Inputs: the pipeline's results and the bundle it analysed (config/params.yaml). T2T_RESULTS and T2T_BUNDLE
+# override them, e.g. to render the report from the test bundle.
+settings = yaml.safe_load(Path("config/params.yaml").read_text())
+RESULTS = Path(os.environ.get("T2T_RESULTS", "results")) / "analysis"
+BUNDLE = Path(os.environ.get("T2T_BUNDLE", settings["bundle"]))
+A, B = "chm13v2.0", "grch38"
+
+effects = {m: pd.read_csv(RESULTS / "paired-test" / f"effects-{m}.tsv", sep="\t", dtype={"gene_ncbi": str})
+           for m in ("star", "salmon")}
+robust = pd.read_csv(RESULTS / "paired-test" / "robust.tsv", sep="\t", dtype={"gene_ncbi": str})
+calib = pd.read_csv(RESULTS / "paired-test" / "calibration.tsv", sep="\t").set_index("method")
+sets = pd.read_csv(RESULTS / "gene-sets" / "changed-genes.tsv", sep="\t", dtype={"gene_ncbi": str})
+egenes = {m: pd.read_csv(BUNDLE / m / "egenes.tsv", sep="\t", dtype={"gene_ncbi": str}) for m in ("star", "salmon")}
+
+n_ind = int(calib.loc["star", "individuals"])
+n_genes = len(robust)
+main = sets[sets.tier.isin(["core", "main"])]
+unflagged = robust[~robust.artefact_flag.astype(bool)]
+n_flagged = int(robust.artefact_flag.astype(bool).sum())
+by_class = main.region_class.value_counts()
+share_sd = by_class.get("sd", 0) / max(len(main), 1)
+class_all = unflagged.region_class.value_counts(normalize=True)
+fmt = lambda x: f"{x:,}"
+```
+
+## Question
+
+An expression quantitative trait locus (eQTL) is a genetic variant that changes how much a gene is expressed.
+Finding one starts by mapping RNA-seq reads to a reference genome. GRCh38, the standard reference, has gaps,
+collapsed segmental duplications and a few false duplications; T2T-CHM13 is the first complete human genome
+[@nurk2022t2t]. **If the same reads from the same people are analysed on both references, which eQTLs change, and
+where in the genome are they?**
+
+## Data
+
+RNA-seq of lymphoblastoid cell lines from the MAGE study [@taylor2024mage] and the 1000 Genomes genotypes of the
+same people, called separately on each reference [@byrskabishop2022; @rhie2023chm13]. This report analyses
+`{python} fmt(n_ind)` individuals and the `{python} fmt(n_genes)` genes whose eQTL could be compared at the same
+variant on both references, under both quantification methods. Sources, versions and checksums of every input are in
+`metadata/sources.tsv`.
+
+## Methods
+
+The same reads went through the same pipeline twice, once per reference (`workflow/nextflow/`, `--mode full` on a
+Slurm cluster): STAR alignment [@dobin2013star], quantification with STAR gene counts and with salmon
+[@patro2017salmon], and cis-eQTL mapping with tensorQTL [@taylorweiner2019tensorqtl]. Variants called on both
+references were paired, so each gene's eQTL effect can be compared **at the same variant**. The two effect estimates
+come from the same individuals, so they are correlated; a paired test accounts for that (`scripts/paired_test.py`).
+A gene counts as *changed* when the paired test is significant after Bonferroni correction under both STAR and
+salmon, with the same direction; the *main* set also requires a change of at least
+`{python} settings["effect_floor"]` SD per allele under both methods. Genes whose exon-overlap partners differ
+between the annotations, MHC genes and pseudo-autosomal genes are flagged as possible artefacts and left out
+(`{python} n_flagged` genes).
+
+This report and its figures start from the processed inputs of the paired test (the release asset
+`mage-processed-v1`), which `pixi run reproduce` downloads and checks; the upstream cluster run is described in
+`docs/cluster.md`.
+
+## Results
+
+### eGenes on each reference
+
+```{python}
+#| label: tbl-egenes
+#| tbl-cap: "Genes with a significant cis-eQTL (eGenes, FDR 5%) on each reference, by quantification method."
+rows = []
+for m, label in (("star", "STAR"), ("salmon", "salmon")):
+    e = egenes[m]
+    rows.append({"method": label, "T2T-CHM13": int(e[f"egene_{A}"].sum()), "GRCh38": int(e[f"egene_{B}"].sum()),
+                 "eGene on both": int((e[f"egene_{A}"] & e[f"egene_{B}"]).sum())})
+pd.DataFrame(rows).set_index("method")
+```
+
+![eGenes (FDR 5%) per reference and quantification method.](../results/analysis/figures/fig01-egenes.png){#fig-egenes fig-alt="Bar chart of the number of eGenes on T2T-CHM13 and on GRCh38, for STAR and for salmon quantification. The bars of the two references are close in height for both methods."}
+
+### Same variant, two references
+
+```{python}
+#| label: effect-numbers
+s = effects["star"]
+s_clean = s[~s.artefact_flag.astype(bool)]
+r_slopes = np.corrcoef(s_clean.slope_a, s_clean.slope_b)[0, 1]
+lam_indep, lam_paired = calib.loc["star", "lambda_indep"], calib.loc["star", "lambda_paired"]
+boot_paired, boot_indep = calib.loc["star", "median_boot_over_paired"], calib.loc["star", "median_boot_over_indep"]
+```
+
+For most genes the eQTL effect is the same on both references: across `{python} fmt(len(s_clean))` unflagged genes
+the two effect estimates correlate with r = `{python} f"{r_slopes:.3f}"` (@fig-effects). Because the estimates
+share their individuals, the independent test is far too conservative: a bootstrap over individuals gives a standard
+error of the difference `{python} f"{boot_paired:.2f}"` times the paired one, but only `{python} f"{boot_indep:.2f}"`
+times the independent one (@tbl-calibration).
+
+![eQTL effect of the same variant on GRCh38 (x) and on T2T-CHM13 (y), STAR quantification. Each point is a gene; genes in the main changed set are highlighted.](../results/analysis/figures/fig02-effects.png){#fig-effects fig-alt="Scatter plot of eQTL effect sizes, GRCh38 on the x axis and T2T-CHM13 on the y axis. Most genes lie on the diagonal; the changed genes, in blue, lie away from it."}
+
+```{python}
+#| label: tbl-calibration
+#| tbl-cap: "Calibration of the paired test. Bootstrap: SD of the effect difference over resamples of individuals, divided by each test's standard error (1 = calibrated). Lambda: median chi-square of the z statistics over its null value."
+c = calib[["genes", "individuals", "median_boot_over_paired", "median_boot_over_indep", "lambda_indep",
+           "lambda_paired", "median_rho", "changed_indep", "changed_paired"]].copy()
+c.columns = ["genes", "individuals", "bootstrap / paired SE", "bootstrap / independent SE", "lambda (independent)",
+             "lambda (paired)", "median residual correlation", "changed (independent)", "changed (paired)"]
+c.T.map(lambda v: f"{int(v):,}" if float(v).is_integer() else f"{v:.3f}")
+```
+
+### Changed genes
+
+`{python} fmt(len(main))` genes change their eQTL between T2T-CHM13 and GRCh38 (main set; `{python} fmt(len(sets))`
+in the wider extent set). `{python} f"{100 * share_sd:.0f}"`% of them lie in segmental duplications, against
+`{python} f"{100 * class_all.get('sd', 0):.1f}"`% of all compared genes (@fig-changed).
+
+![Genes in the main changed set by region class: segmental duplications (at least 98% identity, T2T coordinates), sequence absent from GRCh38, and other.](../results/analysis/figures/fig03-changed-genes.png){#fig-changed fig-alt="Bar chart of the number of changed genes in three region classes: other, segmental duplication and T2T-only sequence."}
+
+```{python}
+#| label: tbl-top
+#| tbl-cap: "The 15 changed genes with the largest paired z (STAR): effect per T2T ALT allele on each reference, the difference, and its paired z under STAR and salmon."
+top = main.reindex(main.z_paired.abs().sort_values(ascending=False).index).head(15)
+top = top[["symbol", "region_class", "tier", "slope_a", "slope_b", "delta", "z_paired", "z_paired_salmon"]]
+top.columns = ["gene", "region", "tier", "effect T2T", "effect GRCh38", "difference", "z (STAR)", "z (salmon)"]
+top.set_index("gene").round(2)
+```
+
+## Limitations
+
+- The paired test compares one variant pair per gene, the lead variants chosen on the cluster; a gene whose signal
+  moves to another variant is counted only through that pair.
+- Which reference is *right* for a changed gene needs independent evidence (allele-specific expression, long reads);
+  this report shows where the references disagree, not which one is correct.
+- Autosomes only (chr1-22).
+
+## Software
+
+```{python}
+#| label: versions
+r_version = subprocess.run(["Rscript", "--version"], capture_output=True, text=True)
+nf_version = subprocess.run(["nextflow", "-version"], capture_output=True, text=True).stdout
+nf = next((line.strip() for line in nf_version.splitlines() if "version" in line), "unknown")
+print(f"Python {sys.version.split()[0]}, pandas {pd.__version__}, numpy {np.__version__}")
+print((r_version.stderr or r_version.stdout).strip().splitlines()[0])
+print(f"Nextflow {nf}")
+```
+
+The exact version of every package is in `pixi.lock` (and, readable, in `docs/software-versions.txt`). The cluster
+run used STAR 2.7.11b, salmon 1.11.4 and tensorQTL 1.0.10.
+
+## References
+
+::: {#refs}
+:::
