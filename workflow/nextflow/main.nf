@@ -25,9 +25,9 @@ params {
     bundle: String = 'data/raw/mage-processed-v1'
 
     // full mode: inputs
-    samples: Path = 'metadata/samples.tsv'
-    samplesheet: Path = 'metadata/samplesheet-mage.csv'
-    chrom_names: Path = 'metadata/chrom-names-chm13v2.0.tsv'
+    samples: String = 'metadata/samples.tsv'
+    samplesheet: String = 'metadata/samplesheet-mage.csv'
+    chrom_names: String = 'metadata/chrom-names-chm13v2.0.tsv'
     raw_dir: String = 'data/raw'
     processed_dir: String = 'data/processed'
     chromosomes: String = 'chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22'
