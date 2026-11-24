@@ -90,8 +90,9 @@ standard error matches a bootstrap over individuals (ratio 0.96), while the inde
 The layout of the course template; every folder has its own README, and `docs/structure.md` describes them all.
 
 ```text
-workflow/nextflow/   the pipeline: main.nf, modules/ (processes), subworkflows/, conf/ (profiles local, hpc, test), tests/ (nf-test)
-scripts/             the code each step runs (Python, R, shell), one script per step
+workflow/nextflow/   the pipeline: main.nf, subworkflows/, conf/ (profiles local, hpc, test), tests/ (nf-test),
+                     modules/<module>/ = processes (main.nf), the scripts they run (scripts/), their nf-tests (tests/)
+scripts/             project scripts outside the pipeline: data download, metadata, lint
 config/              params.yaml (analysis settings); site.config.example (cluster paths and queues)
 metadata/            sources.tsv, checksums, samples.tsv, samplesheet-mage.csv
 reports/             the Quarto report

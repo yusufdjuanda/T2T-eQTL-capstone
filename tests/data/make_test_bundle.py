@@ -16,7 +16,7 @@ import pandas as pd
 from scipy.stats import norm
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "scripts"))
+sys.path.insert(0, str(HERE.parents[1] / "workflow/nextflow/modules/analysis/scripts"))
 from paired_test import covariate_basis, paired_stats, residualise  # noqa: E402
 
 N, G = 80, 40

@@ -8,9 +8,9 @@ Choices a reader might otherwise have to guess, and why they were made.
   the reference (sequence and annotation), not from sampling.
 - **Same annotation release on both references** (NCBI RefSeq RS_2025_08); genes are matched by NCBI GeneID.
 - **T2T made comparable to GRCh38_noalt**: chrY PARs hard-masked and chrM/chrEBV added, as in the GRCh38 analysis set
-  (`scripts/prepare_star_reference.sh`).
+  (`workflow/nextflow/modules/references/scripts/prepare_star_reference.sh`).
 - **Genotypes called on each reference**, never lifted over. liftOver is used only to pair variants called
-  independently on each reference (`scripts/match_variants.py`).
+  independently on each reference (`workflow/nextflow/modules/genotypes/scripts/match_variants.py`).
 - **Effects compared at the same variant**, not by eGene counts: genes such as PWP2 and CBS are eGenes on both
   references, but their GRCh38 effect is inflated by the chr21 false duplication.
 - **Allele coding from the genotype correlation** of the two variants, not from REF/ALT labels: REF and ALT differ
@@ -22,7 +22,7 @@ Choices a reader might otherwise have to guess, and why they were made.
 
 - **Paired test instead of independent z.** The two effect estimates share individuals and most of their noise
   (median residual correlation 0.99), so the independent z is about 9 times too conservative. The covariance of the two
-  OLS slopes is computed exactly and checked by a bootstrap over individuals (`scripts/paired_test.py`, tests in
+  OLS slopes is computed exactly and checked by a bootstrap over individuals (`workflow/nextflow/modules/analysis/scripts/paired_test.py`, tests in
   `tests/python/test_paired_test.py`).
 - **Bonferroni** over the genes compared, per method; effect floor of 0.1 SD per allele for the main set.
 - **Artefact flags** (exon-overlap partners differ between annotations, MHC, PARs) remove genes whose change has a known

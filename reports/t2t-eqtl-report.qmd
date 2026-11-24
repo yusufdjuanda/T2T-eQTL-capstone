@@ -73,7 +73,7 @@ The same reads went through the same pipeline twice, once per reference (`workfl
 Slurm cluster): STAR alignment [@dobin2013star], quantification with STAR gene counts and with salmon
 [@patro2017salmon], and cis-eQTL mapping with tensorQTL [@taylorweiner2019tensorqtl]. Variants called on both
 references were paired, so each gene's eQTL effect can be compared **at the same variant**. The two effect estimates
-come from the same individuals, so they are correlated; a paired test accounts for that (`scripts/paired_test.py`).
+come from the same individuals, so they are correlated; a paired test accounts for that (`workflow/nextflow/modules/analysis/scripts/paired_test.py`).
 A gene counts as *changed* when the paired test is significant after Bonferroni correction under both STAR and
 salmon, with the same direction; the *main* set also requires a change of at least
 `{python} settings["effect_floor"]` SD per allele under both methods. Genes whose exon-overlap partners differ

@@ -3,7 +3,8 @@
 | What | Where | Run |
 |------|-------|-----|
 | Unit tests of the scripts (pytest) | `tests/python/` | `pixi run test-python` |
-| Tests of processes, workflows and the whole pipeline (nf-test) | `workflow/nextflow/tests/` | `pixi run test-nf` |
+| Tests of processes (nf-test) | `workflow/nextflow/modules/<module>/tests/` | `pixi run test-nf` |
+| Tests of the ANALYSIS subworkflow and the whole pipeline (nf-test) | `workflow/nextflow/tests/` | `pixi run test-nf` |
 | Stub run of the full cluster pipeline | profile `test` | `pixi run stub-full` |
 | All of them | | `pixi run test` |
 

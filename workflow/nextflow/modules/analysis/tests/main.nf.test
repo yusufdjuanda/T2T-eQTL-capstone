@@ -1,0 +1,50 @@
+nextflow_process {
+
+    name "PAIRED_TEST on the synthetic bundle"
+    script "../main.nf"
+    process "PAIRED_TEST"
+
+    test("finds exactly the planted changes, under both methods") {
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/data/bundle", type: 'dir')
+                input[1] = 20
+                input[2] = 10
+                input[3] = 2026
+                """
+            }
+        }
+        then {
+            assert process.success
+            def dir = process.out[0][0]
+            ['effects-star.tsv', 'effects-salmon.tsv', 'robust.tsv', 'calibration.tsv', 'summary.tsv'].each { f ->
+                assert path("${dir}/${f}").exists()
+            }
+            def rows = path("${dir}/robust.tsv").readLines()
+            def header = rows[0].split('\t') as List
+            def robust = rows.drop(1).collect { line -> line.split('\t') }
+                .findAll { cols -> cols[header.indexOf('robust_paired')] == 'True' }
+                .collect { cols -> cols[header.indexOf('symbol')] } as Set
+            assert robust == ['G01', 'G02', 'G03', 'G04', 'G05', 'G06'] as Set
+        }
+    }
+
+    test("stub writes every output file") {
+        options "-stub"
+        when {
+            process {
+                """
+                input[0] = file("${baseDir}/tests/data/bundle", type: 'dir')
+                input[1] = 20
+                input[2] = 10
+                input[3] = 2026
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path("${process.out[0][0]}/robust.tsv").exists()
+        }
+    }
+}

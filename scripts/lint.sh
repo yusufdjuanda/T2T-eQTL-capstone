@@ -9,7 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 fail=0
 
 echo "1. Python syntax"
-python -m compileall -q scripts tests || fail=1
+python -m compileall -q scripts tests workflow || fail=1
 
 echo "2. shell syntax and ShellCheck (errors only)"
 mapfile -t sh < <(git ls-files '*.sh')

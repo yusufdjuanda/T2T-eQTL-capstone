@@ -8,8 +8,8 @@ The layout follows the course project template (cookiecutter-repro-project). Eve
 | `data/processed/` | derived inputs reused between runs: STAR references and indexes | rebuilt by the pipeline, not committed |
 | `metadata/` | sources, checksums, sample list, samplesheet, chromosome names, data dictionary | committed |
 | `config/` | `params.yaml` (analysis settings), `site.config.example` (cluster paths and queues) | committed; `site.config` is not |
-| `workflow/nextflow/` | the pipeline: `main.nf`, `modules/`, `subworkflows/`, `conf/`, `tests/` (nf-test) | committed |
-| `scripts/` | the code each step runs (Python, R, shell) | committed |
+| `workflow/nextflow/` | the pipeline: `main.nf`, `subworkflows/`, `conf/`, `modules/<module>/` (processes, the scripts they run, nf-tests), `tests/` | committed |
+| `scripts/` | project scripts the pipeline does not run: downloads, metadata, lint | committed |
 | `reports/` | Quarto report and bibliography | source committed, HTML not |
 | `results/` | everything the pipeline produces | rebuilt, not committed |
 | `tests/` | pytest unit tests (`python/`) and small test data (`data/`) | committed |
