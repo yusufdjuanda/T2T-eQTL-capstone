@@ -6,6 +6,7 @@ states its inputs, outputs and usage at the top, and has a pixi task where it is
 | Script | What it does | Run with |
 |--------|--------------|----------|
 | `download_data.py` | downloads the processed MAGE bundle (release asset) and checks every checksum | `pixi run download` (first step of `reproduce`) |
+| `check_results.py` | compares the results with `metadata/expected-results.tsv` | `pixi run check-results` (last step of `reproduce`) |
 | `fetch_t2t_panel.sh` | downloads the 1000 Genomes T2T-CHM13 genotype panel (cluster run) | `pixi run fetch-t2t-panel` |
 | `fetch_grch38_panel.sh` | downloads the 1000 Genomes GRCh38 genotype panel (cluster run) | `pixi run fetch-grch38-panel` |
 | `check_inputs.sh` | checks the cluster inputs against `metadata/checksums-cluster-inputs.sha256` | `pixi run check-inputs` |

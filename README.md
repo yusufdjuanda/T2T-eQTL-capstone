@@ -53,7 +53,9 @@ pixi run reproduce
    `metadata/sources.tsv` and every file against `metadata/checksums.sha256`, and makes it read-only;
 2. `pixi run pipeline` runs the Nextflow pipeline in reproduce mode with the settings in `config/params.yaml`:
    paired test, changed-gene sets, figures (`results/analysis/`);
-3. `pixi run report` renders the Quarto report, `reports/t2t-eqtl-report.html`.
+3. `pixi run report` renders the Quarto report, `reports/t2t-eqtl-report.html`;
+4. `pixi run check-results` compares the results with the published values (`metadata/expected-results.tsv`) and
+   stops with an error if any differs.
 
 The *Reproduce* GitHub Action runs the same command on a fresh machine on every push.
 
@@ -86,7 +88,16 @@ The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
 Expected (731 individuals; reproduced 2026-11-24): 13,564 genes compared under both STAR and salmon; 121 genes in
 the main changed set (63 of them core), 59 of them in segmental duplications; 246 in the wider extent set. The paired
 standard error matches a bootstrap over individuals (ratio 0.95), while the independent one overstates it about
-9-fold (ratio 0.11).
+9-fold (ratio 0.11). The last step of `pixi run reproduce` (`pixi run check-results`) checks these numbers and the exact list of
+changed genes, and prints one line per value:
+
+```text
+OK         genes_compared           expected 13564            got 13564
+OK         changed_main             expected 121              got 121
+OK         changed_genes_sha256     expected 8f410fdfc6b44a5c got 8f410fdfc6b44a5c
+...
+all 8 results match the published values
+```
 
 ## Repository contents
 

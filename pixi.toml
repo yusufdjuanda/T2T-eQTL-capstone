@@ -41,7 +41,8 @@ pytest = ">=9,<10"
 download = { cmd = "python scripts/download_data.py", description = "Download the processed MAGE bundle (release asset) and verify its checksums" }
 pipeline = { cmd = "nextflow run workflow/nextflow/main.nf -profile local -params-file config/params.yaml --mode reproduce -resume", depends-on = ["download"], description = "Paired test, changed-gene sets and figures from the processed bundle (Nextflow, local)" }
 report = { cmd = "quarto render reports/t2t-eqtl-report.qmd", depends-on = ["pipeline"], description = "Render the Quarto report (reports/t2t-eqtl-report.html)" }
-reproduce = { depends-on = ["download", "pipeline", "report"], description = "Rebuild every result and the report from the published data, with one command" }
+check-results = { cmd = "python scripts/check_results.py", depends-on = ["pipeline"], description = "Compare the results with the published values (metadata/expected-results.tsv)" }
+reproduce = { depends-on = ["download", "pipeline", "report", "check-results"], description = "Rebuild every result and the report from the published data, and check them, with one command" }
 
 test-python = { cmd = "pytest tests/python", description = "Unit tests of the scripts (pytest)" }
 test-nf = { cmd = "nf-test test --verbose", description = "Tests of the Nextflow processes and workflows (nf-test)" }

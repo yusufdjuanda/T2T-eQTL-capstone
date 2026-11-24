@@ -31,6 +31,12 @@ SHA-256 of every file of the unpacked release asset (`data/raw/mage-processed-v1
 SHA-256 of every input of the cluster run (genotype panels, genomes, annotations, T2T consortium tracks, liftOver
 chains), paths under `data/raw/`. Check with `pixi run check-inputs [raw folder]`.
 
+## expected-results.tsv
+
+The published values that `pixi run check-results` (the last step of `pixi run reproduce`) compares the results with:
+`metric`, `expected`, `tolerance` (0 = exact) and `description`. `changed_genes_sha256` fixes the exact list of changed
+genes and their tiers.
+
 ## samples.tsv
 
 One row per MAGE individual; written by `scripts/make_sample_lists.sh`.
