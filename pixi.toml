@@ -9,7 +9,7 @@
 #   lint     ShellCheck and Python, for the static checks.
 [workspace]
 name = "t2t-eqtl-capstone"
-version = "0.2.0"
+version = "1.0.0"
 description = "Does the reference genome change eQTLs? cis-eQTLs on T2T-CHM13 and GRCh38 from the same MAGE reads"
 authors = ["Yusuf Maulana"]
 license = "MIT"
