@@ -17,9 +17,14 @@ process SUBSET_GENOTYPES {
     output:
     tuple val(geno), val(chrom), path("${geno}.${chrom}.bcf"), path("${geno}.${chrom}.bcf.csi")
 
+    // The given individuals; SNVs and indels only (the GRCh38 panel also holds SVs, the T2T panel does not);
+    // multiallelic sites split; AC/AN/MAF recomputed in this subset; monomorphic sites dropped.
     script:
     """
-    bash ${moduleDir}/../../../scripts/subset_genotypes.sh ${panel} ${chrom} ${samples} ${geno}.${chrom}.bcf
+    bcftools view -S ${samples} -r ${chrom} -v snps,indels -Ou ${panel} \\
+        | bcftools norm -m- -Ou \\
+        | bcftools +fill-tags -Ou -- -t AC,AN,MAF \\
+        | bcftools view -c1:minor -Ob -W=csi -o ${geno}.${chrom}.bcf
     """
 
     stub:
@@ -43,9 +48,14 @@ process MATCH_VARIANTS {
     output:
     path "${chrom}.tsv.gz"
 
+    // Variants with MAF >= min_maf from both subsets; the T2T ones lifted to GRCh38 as 1-bp intervals (name = row
+    // number) only to pair them with variants called on GRCh38; then match_variants.py pairs them.
     script:
     """
-    bash ${moduleDir}/../../../scripts/lift_variants.sh ${t2t_bcf} ${g38_bcf} ${chain} ${min_maf}
+    bcftools query -i 'INFO/MAF>=${min_maf}' -f '%CHROM\\t%POS\\t%REF\\t%ALT\\t%INFO/MAF\\t%INFO/SYNTENIC\\n' ${t2t_bcf} > t2t.tsv
+    bcftools query -i 'INFO/MAF>=${min_maf}' -f '%CHROM\\t%POS\\t%REF\\t%ALT\\t%INFO/MAF\\n' ${g38_bcf} > g38.tsv
+    awk -F'\\t' -v OFS='\\t' '{print \$1, \$2 - 1, \$2, NR, 0, "+"}' t2t.tsv > t2t.bed
+    liftOver -minMatch=0.95 t2t.bed ${chain} lifted.bed unlifted.bed
     python ${moduleDir}/../../../scripts/match_variants.py match --t2t t2t.tsv --grch38 g38.tsv --lifted lifted.bed \\
         --out ${chrom}.tsv.gz
     """

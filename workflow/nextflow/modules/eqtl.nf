@@ -44,9 +44,12 @@ process GENOTYPE_PCS {
     output:
     path 'genotype-pcs.eigenvec'
 
+    // From the T2T matched variants, so ancestry is described identically for every reference: SNPs with
+    // MAF >= 0.05 on chr1-22, LD-pruned, then the top n_pcs principal components.
     script:
     """
-    bash ${moduleDir}/../../../scripts/genotype_pcs.sh ${pgen.baseName} ${n_pcs}
+    plink2 --pfile ${pgen.baseName} --maf 0.05 --snps-only --autosome --indep-pairwise 200kb 1 0.2 --out genotype-prune
+    plink2 --pfile ${pgen.baseName} --extract genotype-prune.prune.in --pca ${n_pcs} --out genotype-pcs
     """
 
     stub:
