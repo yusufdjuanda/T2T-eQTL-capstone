@@ -54,6 +54,6 @@ workflow FULL {
     matrices = EXPRESSION.out.matrices
     eqtl = EQTL.out.cis
     eqtl_inputs = EQTL.out.phenotypes.mix(EQTL.out.covariates)
-    comparison = COMPARE.out.annotation.mix(COMPARE.out.genes, COMPARE.out.effects, COMPARE.out.combined)
+    comparison = COMPARE.out.annotation.mix(COMPARE.out.genes, COMPARE.out.effects)
     release = COMPARE.out.archive
 }

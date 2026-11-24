@@ -122,34 +122,6 @@ process COMPARE_EFFECTS {
     """
 }
 
-process COMBINE_METHODS {
-    label 'qtl'
-    cpus 1
-    memory '16 GB'
-
-    input:
-    path effects_star
-    path effects_salmon
-    path salmon_nominal_t2t, stageAs: 'nominal-t2t/*'
-    path salmon_nominal_g38, stageAs: 'nominal-grch38/*'
-
-    output:
-    path 'combined-methods'
-
-    script:
-    """
-    python ${moduleDir}/../../../scripts/combine_methods.py --effects-star ${effects_star} \\
-        --effects-salmon ${effects_salmon} --salmon-nominal-t2t nominal-t2t --salmon-nominal-grch38 nominal-grch38 \\
-        --outdir combined-methods
-    """
-
-    stub:
-    """
-    mkdir -p combined-methods
-    touch combined-methods/summary.tsv
-    """
-}
-
 process EXPORT_BUNDLE {
     label 'qtl'
     cpus 1

@@ -2,7 +2,7 @@
  * COMPARE: gene annotations, eGenes and same-variant effects on T2T-CHM13 vs GRCh38, per quantification method;
  * then the export of the paired test's inputs (the bundle published as the release asset).
  */
-include { ANNOTATION_OVERLAPS; GENE_CLASSES; COMPARE_EQTL; COMPARE_EFFECTS; COMBINE_METHODS; EXPORT_BUNDLE } from '../modules/compare'
+include { ANNOTATION_OVERLAPS; GENE_CLASSES; COMPARE_EQTL; COMPARE_EFFECTS; EXPORT_BUNDLE } from '../modules/compare'
 
 workflow COMPARE {
     take:
@@ -39,12 +39,6 @@ workflow COMPARE {
     nominal_g38 = nominal.filter { ref, _method, _files -> ref == 'grch38' }.map { _ref, method, files -> tuple(method, files) }
     eff = COMPARE_EFFECTS(compared.genes.join(nominal_t2t).join(nominal_g38), geno_t2t, geno_g38, tables)
 
-    combined = COMBINE_METHODS(
-        eff.effects.filter { method, _f -> method == 'star' }.map { _method, f -> f },
-        eff.effects.filter { method, _f -> method == 'salmon' }.map { _method, f -> f },
-        nominal_t2t.filter { method, _files -> method == 'salmon' }.map { _method, files -> files },
-        nominal_g38.filter { method, _files -> method == 'salmon' }.map { _method, files -> files })
-
     bundle_files = eff.effects.map { _method, f -> f }
         .mix(compared.genes.map { _method, f -> f })
         .mix(phenotypes.map { _ref, _method, bed, _tested -> bed })
@@ -57,7 +51,6 @@ workflow COMPARE {
     annotation = overlaps.mix(classes)
     genes = compared.genes.map { _method, f -> f }.mix(compared.summary)
     effects = eff.effects.map { _method, f -> f }.mix(eff.summary)
-    combined = combined
     bundle = exported.bundle
     archive = exported.archive.mix(exported.checksums)
 }
