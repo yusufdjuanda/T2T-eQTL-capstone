@@ -1,4 +1,4 @@
-# Does the reference genome change eQTLs? T2T-CHM13 vs GRCh38 in MAGE
+# Reference genome and eQTLs: T2T-CHM13 vs GRCh38 in MAGE
 
 [![Reproduce](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/reproduce.yml/badge.svg)](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/reproduce.yml)
 [![Tests](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/tests.yml/badge.svg)](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/tests.yml)
@@ -6,12 +6,12 @@
 Author: Yusuf Maulana. Capstone project of CBIO7501 (Reproducible and Open Science): one dataset (MAGE) and one
 comparison (T2T-CHM13 vs GRCh38) from a larger ongoing study.
 
-## What is this project about?
+## About
 
 An eQTL is a genetic variant that changes how much a gene is expressed. Finding one starts by mapping RNA-seq reads
 to a reference genome. GRCh38, the standard reference, has gaps, collapsed duplications and a few false duplications;
-T2T-CHM13 is the first complete human genome. **If the same reads from the same people are analysed on both
-references, which eQTLs change, and where in the genome are they?**
+T2T-CHM13 is the first complete human genome. This project finds **which eQTLs change when the same reads
+from the same people are analysed on both references, and where in the genome they are.**
 
 Data: RNA-seq of lymphoblastoid cell lines from 731 people of the MAGE study (26 populations, 2 x 150 bp) and their
 1000 Genomes genotypes, called separately on each reference. The same reads go through the same pipeline twice, once
@@ -27,10 +27,12 @@ The project has two parts, one Nextflow pipeline (`workflow/nextflow/main.nf`):
 | `--mode reproduce` (what `pixi run reproduce` runs) | the processed MAGE inputs of the paired test, a 104 MB release asset | paired test, changed-gene sets, figures, report | a laptop, under a minute |
 | `--mode full` | raw reads (SRA) and genotype panels | the release asset, then the same analysis | a Slurm cluster, ~3,000 CPU hours |
 
-## Is there a publication?
+## Publication
 
-Not yet. The data are from Taylor et al. 2024, *Nature* 632:122–130 (MAGE,
-<https://doi.org/10.1038/s41586-024-07708-2>); the reference genome from Nurk et al. 2022, *Science* 376:44–53
+Ongoing work; no manuscript or preprint yet.
+
+Related work: the MAGE data are from Taylor et al. 2024, *Nature* 632:122–130
+(<https://doi.org/10.1038/s41586-024-07708-2>); the T2T-CHM13 reference from Nurk et al. 2022, *Science* 376:44–53
 (<https://doi.org/10.1126/science.abj6987>). Behera et al. 2023 (*Genome Biology* 24:31, FixItFelix) showed how
 GRCh38's false duplications distort eQTLs on chr21.
 
@@ -61,7 +63,7 @@ step from SRA download through alignment and eQTL mapping to the export. `pixi t
 
 The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
 
-## What hardware does it need?
+## Hardware
 
 - **`pixi run reproduce`**: any recent laptop or the GitHub runner. Measured on Linux (2026-11-24): download check,
   pipeline and report in 39 seconds, at most 1.6 GB of memory, one CPU per task; disk 2.1 GB for the software
@@ -72,7 +74,7 @@ The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
   per STAR reference and index, the reads (~2.5 TB) pass through the work folder one run at a time, and ~40 GB of eQTL
   results. Details and timings: `docs/cluster.md`.
 
-## What outputs should I expect?
+## Outputs
 
 | Path | Content |
 |------|---------|
@@ -86,7 +88,7 @@ the main changed set (63 of them core), 59 of them in segmental duplications; 24
 standard error matches a bootstrap over individuals (ratio 0.95), while the independent one overstates it about
 9-fold (ratio 0.11).
 
-## What is in this repository?
+## Repository contents
 
 The layout of the course template; every folder has its own README, and `docs/structure.md` describes them all.
 
