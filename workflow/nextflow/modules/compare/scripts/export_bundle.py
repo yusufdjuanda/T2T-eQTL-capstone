@@ -45,7 +45,7 @@ def dosages(prefix, variant_ids):
     """ALT dosages (variants x samples) with missing genotypes as NaN."""
     from tensorqtl import pgen
     rd = pgen.PgenReader(str(prefix))
-    v = [x for x in pd.unique(variant_ids) if x in rd.variant_df.index]
+    v = [x for x in dict.fromkeys(variant_ids) if x in rd.variant_df.index]  # unique, order kept
     g = pd.DataFrame(rd.read_list(v, impute_mean=False), index=v, columns=rd.sample_ids).astype(float)
     g[g < 0] = np.nan
     g.index.name = "variant_id"
