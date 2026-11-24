@@ -38,7 +38,7 @@ GRCh38's false duplications distort eQTLs on chr21.
 
 ## Reproduce the results
 
-You need [Pixi](https://pixi.prefix.dev/latest/) (0.67 or later) and an internet connection; Linux or macOS on Apple
+You need [Pixi](https://pixi.prefix.dev/latest/) (0.83 or later) and an internet connection; Linux or macOS on Apple
 silicon (on Windows, use WSL2). Then:
 
 ```bash

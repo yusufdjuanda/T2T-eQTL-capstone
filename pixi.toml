@@ -18,8 +18,8 @@ readme = "README.md"
 repository = "https://github.com/yusufdjuanda/T2T-eQTL-capstone"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64", "osx-arm64"]
-# tested with pixi 0.67.2; the lock file format needs at least this version
-requires-pixi = ">=0.67"
+# tested with pixi 0.83.0, which wrote pixi.lock (lock file format v7)
+requires-pixi = ">=0.83"
 
 [dependencies]
 python = "3.11.*"

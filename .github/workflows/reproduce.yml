@@ -3,7 +3,7 @@
 #
 # From the Reproducible and Open Science project template (MIT,
 # https://github.com/khan-lab/cbio7501-f26/blob/main/assessment/reproduce-workflow.yml). Change: the Pixi version
-# is the one that wrote pixi.lock (0.67.2), and the environments are cached between runs.
+# is the one that wrote pixi.lock (0.83.0), and the environments are cached between runs.
 name: Reproduce
 
 on:
@@ -22,7 +22,7 @@ jobs:
       - name: Install Pixi and the locked environment
         uses: prefix-dev/setup-pixi@v0.11.2
         with:
-          pixi-version: v0.67.2
+          pixi-version: v0.83.0
           locked: true   # fail if pixi.lock does not match pixi.toml
           cache: true
 
