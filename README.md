@@ -24,7 +24,7 @@ The project has two parts, one Nextflow pipeline (`workflow/nextflow/main.nf`):
 
 | Part | From | To | Needs |
 |------|------|----|-------|
-| `--mode reproduce` (what `pixi run reproduce` runs) | the processed MAGE inputs of the paired test, a 150 MB release asset | paired test, changed-gene sets, figures, report | a laptop, minutes |
+| `--mode reproduce` (what `pixi run reproduce` runs) | the processed MAGE inputs of the paired test, a 104 MB release asset | paired test, changed-gene sets, figures, report | a laptop, under a minute |
 | `--mode full` | raw reads (SRA) and genotype panels | the release asset, then the same analysis | a Slurm cluster, ~3,000 CPU hours |
 
 ## Is there a publication?
@@ -63,9 +63,10 @@ The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
 
 ## What hardware does it need?
 
-- **`pixi run reproduce`**: any recent laptop or the GitHub runner (1–4 CPUs, under 4 GB of memory). Disk: 2.1 GB for
-  the software environment (measured on Linux, 2026-11-23), about 150 MB for the bundle, a few MB of results. The
-  analysis takes minutes; the first `pixi install` takes longer.
+- **`pixi run reproduce`**: any recent laptop or the GitHub runner. Measured on Linux (2026-11-24): download check,
+  pipeline and report in 39 seconds, at most 1.6 GB of memory, one CPU per task; disk 2.1 GB for the software
+  environment, 104 MB for the bundle archive (110 MB unpacked) and about 6 MB of results. The first `pixi install`
+  takes a few minutes more.
 - **Full pipeline** (`--mode full`): a Slurm cluster. About 3,000 CPU hours (alignment and quantification of 779 runs on
   two references), up to 16 CPUs and 48 GB per task (STAR), 64 GB for the genotype steps. Disk: ~60 GB of inputs, ~35 GB
   per STAR reference and index, the reads (~2.5 TB) pass through the work folder one run at a time, and ~40 GB of eQTL
@@ -80,9 +81,9 @@ The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
 | `results/analysis/gene-sets/changed-genes.tsv` | the changed genes, with their tier (core, main, extent) and region class |
 | `results/analysis/figures/` | fig01 eGenes per reference, fig02 effects at the same variant, fig03 changed genes by region class (PNG and PDF) |
 
-Expected, from the published run (731 individuals): 13,563 genes compared under both STAR and salmon; 121 genes in
+Expected (731 individuals; reproduced 2026-11-24): 13,564 genes compared under both STAR and salmon; 121 genes in
 the main changed set (63 of them core), 59 of them in segmental duplications; 246 in the wider extent set. The paired
-standard error matches a bootstrap over individuals (ratio 0.96), while the independent one overstates it about
+standard error matches a bootstrap over individuals (ratio 0.95), while the independent one overstates it about
 9-fold (ratio 0.11).
 
 ## What is in this repository?
