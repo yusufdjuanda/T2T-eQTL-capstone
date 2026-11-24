@@ -1,0 +1,64 @@
+nextflow_process {
+
+    name "STAR_ALIGN (stub): one run on one reference"
+    script "../main.nf"
+    process "STAR_ALIGN"
+    options "-stub"
+
+    test("emits per-run files named <run>.<reference>.* for salmon, merging and the logs") {
+        when {
+            process {
+                """
+                def meta = [run: 'SRR19762165', sample: 'NA19717', read_pairs: 21821518L, read_length: 150]
+                input[0] = channel.of(tuple(meta, file('r1.fastq'), file('r2.fastq'), 'chm13v2.0',
+                                            file('star-index', type: 'dir'), file('keep-regions.bed')))
+                """
+            }
+        }
+        then {
+            assert process.success
+            def tx = process.out.tx_bam[0]
+            assert tx[1] == 'chm13v2.0'
+            assert file(tx[2]).name == 'SRR19762165.chm13v2.0.toTranscriptome.bam'
+            assert process.out.counts[0][0] == 'chm13v2.0'
+            assert file(process.out.counts[0][1]).name == 'SRR19762165.chm13v2.0.ReadsPerGene.out.tab'
+            assert process.out.logs[0].collect { f -> file(f).name }.sort() == [
+                'SRR19762165.chm13v2.0.Log.final.out', 'SRR19762165.chm13v2.0.idxstats.tsv',
+                'SRR19762165.chm13v2.0.regions.bam', 'SRR19762165.chm13v2.0.regions.bam.bai']
+        }
+    }
+}
+
+nextflow_process {
+
+    name "MERGE_EXPRESSION: two runs, one reference"
+    script "../main.nf"
+    process "MERGE_EXPRESSION"
+
+    test("gene x individual matrices from STAR and salmon") {
+        when {
+            process {
+                """
+                def d = "${baseDir}/tests/data/expression"
+                input[0] = channel.of(tuple('chm13v2.0',
+                    [file("\${d}/R1.chm13v2.0.ReadsPerGene.out.tab"), file("\${d}/R2.chm13v2.0.ReadsPerGene.out.tab")],
+                    [file("\${d}/R1.chm13v2.0.quant.sf"), file("\${d}/R2.chm13v2.0.quant.sf")],
+                    file("\${d}/genes.tsv"), file("\${d}/tx2gene.tsv")))
+                input[1] = file("\${d}/samplesheet.csv")
+                """
+            }
+        }
+        then {
+            assert process.success
+            def out = process.out[0][0]
+            assert out[0] == 'chm13v2.0'
+            def star = path(out[1]).linesGzip
+            assert star[0] == 'gene_id\tP1\tP2'
+            assert star[1] == 'gA\t7\t1'
+            assert star[2] == 'gB\t3\t9'
+            // salmon NumReads summed over each gene's transcripts: gA = t1 + t2, gB = t3
+            def salmon = path(out[2]).linesGzip.drop(1).collect { line -> line.split('\t') }
+            assert salmon.collect { cols -> [cols[0], cols[1] as double, cols[2] as double] } == [['gA', 15d, 2d], ['gB', 2d, 9d]]
+        }
+    }
+}

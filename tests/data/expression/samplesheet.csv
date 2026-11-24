@@ -1,0 +1,3 @@
+sample,run,read_pairs,read_length,sex,ancestry
+P1,R1,100,150,female,GBR (EUR)
+P2,R2,100,150,male,YRI (AFR)

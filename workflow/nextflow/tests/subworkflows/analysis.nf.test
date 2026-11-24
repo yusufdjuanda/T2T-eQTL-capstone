@@ -1,0 +1,32 @@
+nextflow_workflow {
+
+    name "ANALYSIS: paired test -> gene sets -> figures"
+    script "../../subworkflows/analysis.nf"
+    workflow "ANALYSIS"
+
+    test("the synthetic bundle gives 6 changed genes and three figures") {
+        when {
+            params {
+                nboot = 20
+                nboot_genes = 10
+                seed = 2026
+                effect_floor = 0.1
+            }
+            workflow {
+                """
+                input[0] = channel.fromPath("${baseDir}/tests/data/bundle", type: 'dir')
+                """
+            }
+        }
+        then {
+            assert workflow.success
+            def sets = path(workflow.out.gene_sets[0]).readLines()
+            assert sets.size() == 7       // header + G01-G06
+            def figs = path(workflow.out.figures[0]).list().collect { f -> f.fileName.toString() }
+            ['fig01-egenes', 'fig02-effects', 'fig03-changed-genes'].each { name ->
+                assert figs.contains("${name}.png".toString())
+                assert figs.contains("${name}.pdf".toString())
+            }
+        }
+    }
+}

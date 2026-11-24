@@ -1,0 +1,47 @@
+# Tests on every push and pull request, on a fresh machine:
+#   lint      Python and shell syntax, ShellCheck errors, no cluster paths, well-formed metadata tables
+#   tests     pytest (scripts), nf-test (processes, workflows, both pipeline modes), and the stub run of the full
+#             cluster pipeline (wiring from SRA download through alignment and eQTL mapping to the export)
+# The full analysis itself needs a Slurm cluster and ~2.5 TB of reads, so it is not run here; `Reproduce` runs the
+# published part from the processed data.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          pixi-version: v0.83.0
+          environments: lint
+          locked: true
+          cache: true
+      - name: Static checks
+        run: pixi run -e lint lint
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          pixi-version: v0.83.0
+          locked: true
+          cache: true
+      - name: Nextflow lint (strict syntax)
+        run: pixi run nextflow lint workflow/nextflow
+      - name: pytest
+        run: pixi run test-python
+      - name: nf-test
+        run: pixi run test-nf
+      - name: Stub run of the full pipeline
+        run: pixi run stub-full

@@ -1,0 +1,22 @@
+// Site settings for the cluster run (`-profile hpc -c config/site.config`). Copy to config/site.config (not committed) and edit:
+//   cp config/site.config.example config/site.config
+// Every setting is optional; the defaults are the folders inside the project.
+
+params {
+    // Raw inputs: external/ (genotype panels), references/ (genomes, annotations, liftOver), metadata/ (ENA report)
+    raw_dir       = '/path/to/project-storage/t2t-eqtl/data/raw'
+    // Derived inputs reused between runs: star-references/<reference>/ (STAR references and indexes)
+    processed_dir = '/path/to/project-storage/t2t-eqtl/data/processed'
+}
+
+// Pipeline outputs (the workflow's output block)
+outputDir = '/path/to/project-storage/t2t-eqtl/results'
+
+// Nextflow task folders (large: FASTQ and BAM files pass through here)
+workDir = '/path/to/fast-scratch/t2t-eqtl/work'
+
+process {
+    queue = 'cpu'                                 // default Slurm partition
+    withLabel: 'long' { queue = 'long' }          // partition for tasks longer than a day
+    // clusterOptions = '--account=my-project'    // if your cluster requires an account
+}

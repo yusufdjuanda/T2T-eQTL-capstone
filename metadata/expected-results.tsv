@@ -1,0 +1,9 @@
+metric	expected	tolerance	description
+genes_compared	13564	0	genes compared at the same variant under both STAR and salmon (rows of robust.tsv)
+changed_extent	246	0	changed genes, all tiers (unflagged, paired test significant under both methods, same sign)
+changed_main	121	0	changed genes in the main set (core + main: also |change| >= 0.1 SD under both methods)
+changed_core	63	0	changed genes in the core set (main and also significant with the independent z)
+changed_main_sd	59	0	main-set genes in segmental duplications
+changed_genes_sha256	8f410fdfc6b44a5cd43eb630ea7ad9f443bd6b579515ecda9bd34994a09212d5	0	sha256 of the sorted lines "gene_ncbi<TAB>tier" of changed-genes.tsv: the exact gene list
+boot_over_paired_star	0.9522	0.05	bootstrap SD / paired SE, STAR (1 = calibrated; seeded bootstrap)
+boot_over_indep_star	0.1141	0.05	bootstrap SD / independent SE, STAR (far below 1: the independent test is conservative)

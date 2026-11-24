@@ -1,0 +1,7 @@
+# Quarto settings for this project.
+project:
+  # Run code in reports from the project folder, so paths like "results/analysis" work as in the scripts.
+  execute-dir: project
+  # `quarto render` without a file name renders only the reports.
+  render:
+    - reports/*.qmd

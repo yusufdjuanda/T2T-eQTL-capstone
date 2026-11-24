@@ -1,0 +1,44 @@
+# Reproduce from a clean clone: does `pixi run reproduce` work on a machine that has never seen this project?
+# GitHub gives us a fresh Linux machine and a fresh clone of the repository on every run.
+#
+# From the Reproducible and Open Science project template (MIT,
+# https://github.com/khan-lab/cbio7501-f26/blob/main/assessment/reproduce-workflow.yml). Change: the Pixi version
+# is the one that wrote pixi.lock (0.83.0), and the environments are cached between runs.
+name: Reproduce
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Fresh clone
+        uses: actions/checkout@v7
+
+      - name: Install Pixi and the locked environment
+        uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          pixi-version: v0.83.0
+          locked: true   # fail if pixi.lock does not match pixi.toml
+          cache: true
+
+      - name: Rebuild every result from the published data
+        run: pixi run reproduce
+
+      - name: Committed files must not change when the analysis runs
+        run: git status --porcelain && git diff --exit-code
+
+      - name: Keep the results for 7 days
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: results
+          path: |
+            results/
+            reports/*.html
+          if-no-files-found: ignore
+          retention-days: 7

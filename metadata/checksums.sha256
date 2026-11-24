@@ -1,0 +1,17 @@
+# SHA-256 of every file of the release asset mage-processed-v1, as unpacked in data/raw/mage-processed-v1/.
+# Written by the cluster run (process EXPORT_BUNDLE, results/release/checksums.sha256) and copied here when the
+# asset is published; `pixi run download` checks the downloaded files against these lines.
+1e8d1a64056c7184f84a2cf59aadf79dd0567f3336ed7466fef522f2c3801134  data/raw/mage-processed-v1/genotypes/grch38.dosages.tsv.gz
+20c873f678ef32534e28bb67936b9c4cbd6af95c1a1e111ac455910304a8eea9  data/raw/mage-processed-v1/genotypes/t2t.dosages.tsv.gz
+5f7d5097a7f66cf64230f0b1f1a041188a65e37bbebe8109489a36f3a4b0f404  data/raw/mage-processed-v1/salmon/covariates-chm13v2.0.tsv
+b2823eb1da1c2e5e9c45128b56b5929ce3b5cdc839d863d0d617ab3e66914992  data/raw/mage-processed-v1/salmon/covariates-grch38.tsv
+b1941de0ed65e34b5e9341428d3b1928a13145291871b32299a741bedd7868d8  data/raw/mage-processed-v1/salmon/effects-chm13v2.0-vs-grch38.tsv
+74db7b074874b772a78ed504dbafe5c42ef215346b075e61c458d790915ac7ab  data/raw/mage-processed-v1/salmon/egenes.tsv
+9208f9b3b446507133f701307840df8a336e0b96757ddffb94f13de29ebd9d98  data/raw/mage-processed-v1/salmon/phenotypes-chm13v2.0.bed.gz
+04d94659f67558c15fa2cc99d29e1f4e66b3c4f69dbec8b378c785e1f698b7de  data/raw/mage-processed-v1/salmon/phenotypes-grch38.bed.gz
+e47673b349b59298ca6a6b69b9f9c7aecaa7f9853577b6c072b0d775324fbaf7  data/raw/mage-processed-v1/star/covariates-chm13v2.0.tsv
+c93e07ceab81bac990ac92aa1d726b2ec957470d8820988f81bf3114dc7178ae  data/raw/mage-processed-v1/star/covariates-grch38.tsv
+c7a29fa651719aa5284888064f11f27fc82f4bed256e0f854a27fd6eaafbfe36  data/raw/mage-processed-v1/star/effects-chm13v2.0-vs-grch38.tsv
+05843745f86c3413277cf45e4d9872fbbbb8f0c0cd25d461b4ca6ff21f628f68  data/raw/mage-processed-v1/star/egenes.tsv
+6df52572d30d6acd95821a22434677ebb6b597d19165a32a4cd777aaabdc4002  data/raw/mage-processed-v1/star/phenotypes-chm13v2.0.bed.gz
+bbab8497c5ec5d3c39d1506e5f7e9102a2e87a42d0ec3d87b04f6376e2d99176  data/raw/mage-processed-v1/star/phenotypes-grch38.bed.gz

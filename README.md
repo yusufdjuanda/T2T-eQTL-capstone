@@ -1,121 +1,152 @@
-# Does the reference genome change eQTLs? T2T-CHM13 vs GRCh38 in MAGE
+# Reference genome and eQTLs: T2T-CHM13 vs GRCh38 in MAGE
 
-**Question.** An eQTL is a genetic variant that changes how much a gene is expressed. Finding one starts by mapping
-RNA-seq reads to a reference genome. GRCh38, the standard reference, has gaps, collapsed duplications and a few false
-duplications. T2T-CHM13 is the first complete human genome. This project asks: **if the same reads and the same
-people are analysed on both references, which eQTLs change, and where in the genome are they?**
+[![Reproduce](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/reproduce.yml/badge.svg)](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/reproduce.yml)
+[![Tests](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/tests.yml/badge.svg)](https://github.com/yusufdjuanda/T2T-eQTL-capstone/actions/workflows/tests.yml)
 
-**Data.** RNA-seq of lymphoblastoid cell lines from 731 people of the MAGE study (Taylor et al. 2024, 26 populations,
-2 x 150 bp) and their 1000 Genomes genotypes, which were called separately on each reference.
+Author: Yusuf Maulana. Capstone project of CBIO7501 (Reproducible and Open Science): one dataset (MAGE) and one
+comparison (T2T-CHM13 vs GRCh38) from a larger ongoing study.
 
-**Approach.** The same reads go through the same pipeline twice, once per reference: STAR alignment and salmon
-quantification, then cis-eQTL mapping with tensorQTL. Variants called on both references are paired up, so a gene's
-eQTL effect can be compared **at the same variant** on T2T and on GRCh38. A gene counts as *changed* only when a
-paired test (which accounts for the two estimates coming from the same people) is significant under both STAR and
-salmon, in the same direction.
+## About
 
-## Pipeline
+An eQTL is a genetic variant that changes how much a gene is expressed. Finding one starts by mapping RNA-seq reads
+to a reference genome. GRCh38, the standard reference, has gaps, collapsed duplications and a few false duplications;
+T2T-CHM13 is the first complete human genome. This project finds **which eQTLs change when the same reads
+from the same people are analysed on both references, and where in the genome they are.**
 
-| Stage | What it does | Entry point |
-|---|---|---|
-| 00 | set-up: storage folders, font, checksums, lint | `pixi run setup`, `pixi run fonts`, `pixi run -e lint lint` |
-| 01 | genotypes: download both 1000 Genomes panels, keep the MAGE individuals | `scripts/01-genotypes/` |
-| 02 | references: STAR references and indexes for T2T-CHM13 and GRCh38 (same RefSeq annotation release) | `scripts/02-references/` |
-| 04 | expression: SRA → STAR + salmon on both references (Nextflow), then gene × individual matrices | `bash scripts/04-expression/submit-cohort.sh mage` |
-| 05 | cis-eQTL mapping with tensorQTL, chr1–22, both references and both quantifiers | `bash scripts/05-eqtl/submit-eqtl-cohort.sh mage` |
-| 06 | comparison: variant pairing, gene classes, eGene and effect comparison, paired test, changed-gene sets | `scripts/06-compare/` |
-| 07 | figures | `pixi run figures` |
+Data: RNA-seq of lymphoblastoid cell lines from 731 people of the MAGE study (26 populations, 2 x 150 bp) and their
+1000 Genomes genotypes, called separately on each reference. The same reads go through the same pipeline twice, once
+per reference: STAR alignment, STAR and salmon quantification, cis-eQTL mapping with tensorQTL. Variants called on both
+references are paired, so a gene's eQTL effect is compared **at the same variant**. A gene counts as *changed* only
+when a paired test (which accounts for the two estimates coming from the same people) is significant under both STAR
+and salmon, in the same direction.
 
-Stage numbers are shared by `scripts/`, `results/` and `logs/` (there is no stage 03). Every script describes its
-inputs, outputs and usage in its header.
+The project has two parts, one Nextflow pipeline (`workflow/nextflow/main.nf`):
 
-### Order of the steps
+| Part | From | To | Needs |
+|------|------|----|-------|
+| `--mode reproduce` (what `pixi run reproduce` runs) | the processed MAGE inputs of the paired test, a 104 MB release asset | paired test, changed-gene sets, figures, report | a laptop, under a minute |
+| `--mode full` | raw reads (SRA) and genotype panels | the release asset, then the same analysis | a Slurm cluster, ~3,000 CPU hours |
 
-```bash
-# 01 genotypes
-bash scripts/01-genotypes/chm13v2.0/fetch-panel.sh
-scripts/submit.sh scripts/01-genotypes/grch38/fetch-panel.sbatch
-bash scripts/01-genotypes/make-sample-lists.sh
-scripts/submit.sh scripts/01-genotypes/chm13v2.0/subset-genotypes.sbatch
-scripts/submit.sh scripts/01-genotypes/grch38/subset-genotypes.sbatch
-scripts/submit.sh scripts/06-compare/match-variants.sbatch          # pairs T2T and GRCh38 variants; stage 05 needs it
+## Publication
 
-# 02 references
-scripts/submit.sh scripts/02-references/prepare-star-references.sbatch
-scripts/submit.sh scripts/02-references/build-star-index.sbatch 149   # MAGE reads are 150 bp
-pixi run python scripts/02-references/make-region-beds.py
+Ongoing work; no manuscript or preprint yet.
 
-# 04 expression
-pixi run python scripts/04-expression/make-cohort-sheets.py
-bash scripts/04-expression/submit-cohort.sh mage
+Related work: the MAGE data are from Taylor et al. 2024, *Nature* 632:122–130
+(<https://doi.org/10.1038/s41586-024-07708-2>); the T2T-CHM13 reference from Nurk et al. 2022, *Science* 376:44–53
+(<https://doi.org/10.1126/science.abj6987>). Behera et al. 2023 (*Genome Biology* 24:31, FixItFelix) showed how
+GRCh38's false duplications distort eQTLs on chr21.
 
-# 06a gene annotations used by the comparison
-bash scripts/06-compare/compare-annotation-overlaps.sh
-pixi run python scripts/06-compare/make-gene-classes.py
+## Reproduce the results
 
-# 05 eQTL mapping and the first comparison steps (one chain of Slurm jobs with dependencies)
-bash scripts/05-eqtl/submit-eqtl-cohort.sh mage
-
-# 06b paired test and changed-gene sets, then 07 figures
-pixi run python scripts/06-compare/paired-test.py --cohort mage
-pixi run python scripts/06-compare/define-gene-sets.py --cohort mage
-pixi run figures
-```
-
-To test stage 05 cheaply, `scripts/05-eqtl/make-simulated-cohort.py` builds a small simulated cohort with planted
-eQTLs on chr22; a working pipeline finds most of them.
-
-## Requirements
-
-- Linux x86-64 and [pixi](https://pixi.sh) ≥ 0.67 (tested with 0.67.2). Every tool (Python 3.11, R, tensorQTL, STAR,
-  salmon, samtools, bcftools, plink2, Nextflow, …) comes from `pixi.lock`.
-- A Slurm cluster for stages 01–06. Expression takes about 3,000 CPU hours for MAGE on two references. The reads
-  (~2.5 TB) pass through scratch one batch (~160 GB) at a time. STAR indexes need ~30 GB per reference.
-
-## Quick start
+You need [Pixi](https://pixi.prefix.dev/latest/) (0.83 or later) and an internet connection; Linux or macOS on Apple
+silicon (on Windows, use WSL2). Then:
 
 ```bash
-git clone https://github.com/yusufdjuanda/T2T-eQTL-capstone.git && cd T2T-eQTL-capstone
-pixi install --locked                          # default environment; `-e bio` for STAR, salmon & co.
-cp config/site.env.example config/site.env     # edit: storage folders, scratch, Slurm partitions
-pixi run setup                                 # data/, results/, logs/, work/ as links or plain folders
-pixi run -e lint lint                          # static checks (also run by CI on every push)
+git clone https://github.com/yusufdjuanda/T2T-eQTL-capstone.git
+cd T2T-eQTL-capstone
+pixi run reproduce
 ```
 
-`config/site.env` is the only file that knows about your machine. Scripts contain no absolute paths: they find the
-project root and read `config/site.env` through `scripts/lib/common.sh`. Slurm jobs are submitted from the project
-root with `scripts/submit.sh`, which adds the partition and account from `config/site.env`.
+`pixi run reproduce` installs the exact software in `pixi.lock`, then:
 
-## Input data
+1. `pixi run download` downloads the processed MAGE bundle (GitHub release `data-v1`), checks the archive against
+   `metadata/sources.tsv` and every file against `metadata/checksums.sha256`, and makes it read-only;
+2. `pixi run pipeline` runs the Nextflow pipeline in reproduce mode with the settings in `config/params.yaml`:
+   paired test, changed-gene sets, figures (`results/analysis/`);
+3. `pixi run report` renders the Quarto report, `reports/t2t-eqtl-report.html`;
+4. `pixi run check-results` compares the results with the published values (`metadata/expected-results.tsv`) and
+   stops with an error if any differs.
 
-Nothing is redistributed here. `config/data-sources.tsv` lists every input (origin, URL or accession, version, local
-path) and `config/checksums/inputs.sha256` the sha256 of every downloaded file (`pixi run verify-data`):
+The *Reproduce* GitHub Action runs the same command on a fresh machine on every push.
 
-- 1000 Genomes phased genotypes on T2T-CHM13 (Zenodo 10.5281/zenodo.7612953) and on GRCh38 (NYGC, 2022-04-22)
-- MAGE RNA-seq (NCBI SRA PRJNA851328)
-- NCBI RefSeq genomes and annotation release RS_2025_08 for both references
-- T2T consortium segmental-duplication and new-sequence tracks; UCSC liftOver chains (used only to pair variants)
+Tests (no data needed): `pixi run test` runs the unit tests of the scripts (pytest), the tests of the Nextflow
+processes, workflows and both pipeline modes (nf-test), and a stub run of the full cluster pipeline that checks every
+step from SRA download through alignment and eQTL mapping to the export. `pixi task list` shows every task.
 
-## Software environments (`pixi.toml`)
+The full analysis from raw reads, on a Slurm cluster: `docs/cluster.md`.
 
-| Environment | Contents | Used by |
-|---|---|---|
-| `default` | Python 3.11 (pandas, scipy, PyTorch CPU, pgenlib), R (ggplot2, data.table), plink2, liftOver | Python and R scripts |
-| `bio` | STAR 2.7.11b, salmon 1.11.4, samtools, bcftools, bedtools, sra-tools, minimap2, Nextflow | shell and Slurm scripts, Nextflow tasks |
-| `lint` | Python, ShellCheck | `pixi run -e lint lint`, CI |
+## Hardware
 
-tensorQTL 1.0.10 and qtl 0.1.10 are vendored from their PyPI wheels in `envs/vendor/`.
+- **`pixi run reproduce`**: any recent laptop or the GitHub runner. Measured on Linux (2026-11-24): download check,
+  pipeline and report in 39 seconds, at most 1.6 GB of memory, one CPU per task; disk 2.1 GB for the software
+  environment, 104 MB for the bundle archive (110 MB unpacked) and about 6 MB of results. The first `pixi install`
+  takes a few minutes more.
+- **Full pipeline** (`--mode full`): a Slurm cluster. About 3,000 CPU hours (alignment and quantification of 779 runs on
+  two references), up to 16 CPUs and 48 GB per task (STAR), 64 GB for the genotype steps. Disk: ~60 GB of inputs, ~35 GB
+  per STAR reference and index, the reads (~2.5 TB) pass through the work folder one run at a time, and ~40 GB of eQTL
+  results. Details and timings: `docs/cluster.md`.
 
-## Conventions
+## Outputs
 
-- **Chromosome names.** The genotype panels use `chr1`; the NCBI T2T genome uses `NC_…`. Convert with
-  `config/chrom-names-chm13v2.0.tsv`.
-- **Alleles.** REF and ALT differ between T2T and GRCh38 at about 20% of common SNPs, because the references carry
-  different bases there. Effects are always compared per T2T ALT allele, with the sign set by the correlation of the
-  two variants' genotypes.
-- **Temporary files.** Every job uses its own folder under `$T2T_TMP`, never `/tmp`.
+| Path | Content |
+|------|---------|
+| `reports/t2t-eqtl-report.html` | the report: question, data, methods, results, calibration, software versions |
+| `results/analysis/paired-test/` | per gene and method: effects on both references, paired z and p (`effects-star.tsv`, `effects-salmon.tsv`), the calls under both methods (`robust.tsv`), bootstrap calibration (`calibration.tsv`), `summary.tsv` |
+| `results/analysis/gene-sets/changed-genes.tsv` | the changed genes, with their tier (core, main, extent) and region class |
+| `results/analysis/figures/` | fig01 eGenes per reference, fig02 effects at the same variant, fig03 changed genes by region class (PNG and PDF) |
 
-## Licence
+Expected (731 individuals; reproduced 2026-11-24): 13,564 genes compared under both STAR and salmon; 121 genes in
+the main changed set (63 of them core), 59 of them in segmental duplications; 246 in the wider extent set. The paired
+standard error matches a bootstrap over individuals (ratio 0.95), while the independent one overstates it about
+9-fold (ratio 0.11). The last step of `pixi run reproduce` (`pixi run check-results`) checks these numbers and the exact list of
+changed genes, and prints one line per value:
 
-Code: MIT ([`LICENSE`](LICENSE)). Documentation and figures: CC BY 4.0 ([`LICENSE-docs.md`](LICENSE-docs.md)).
-Citation: [`CITATION.cff`](CITATION.cff).
+```text
+OK         genes_compared           expected 13564            got 13564
+OK         changed_main             expected 121              got 121
+OK         changed_genes_sha256     expected 8f410fdfc6b44a5c got 8f410fdfc6b44a5c
+...
+all 8 results match the published values
+```
+
+## Repository contents
+
+The layout of the course template; every folder has its own README, and `docs/structure.md` describes them all.
+
+```text
+workflow/nextflow/   the pipeline: main.nf, subworkflows/, conf/ (profiles local, hpc, test), tests/ (nf-test),
+                     modules/<module>/ = processes (main.nf), the scripts they run (scripts/), their nf-tests (tests/)
+scripts/             project scripts outside the pipeline: data download, metadata, lint
+config/              params.yaml (analysis settings); site.config.example (cluster paths and queues)
+metadata/            sources.tsv, checksums, samples.tsv, samplesheet-mage.csv
+reports/             the Quarto report
+tests/               pytest unit tests and small test data
+docs/                structure, cluster guide, design decisions, software versions
+data/  results/      downloaded data and outputs (not in Git)
+containers/  envs/   Docker/Apptainer recipes from pixi.lock; Conda export; vendored tensorQTL
+```
+
+## Data
+
+| Data | Source | Licence / terms |
+|------|--------|-----------------|
+| MAGE RNA-seq reads (779 runs, 731 individuals) | NCBI SRA BioProject PRJNA851328 | public, no use restrictions |
+| Phased 1000 Genomes genotypes on T2T-CHM13v2.0 | <https://doi.org/10.5281/zenodo.7612953>, human-pangenomics S3 | IGSR data reuse policy |
+| Phased 1000 Genomes genotypes on GRCh38 (NYGC, 2022-04-22) | 1000 Genomes FTP | IGSR data reuse policy |
+| T2T-CHM13v2.0 and GRCh38 genomes, RefSeq annotation RS_2025_08 | NCBI RefSeq | public |
+| T2T segmental-duplication and new-sequence tracks; UCSC liftOver chains | T2T consortium; UCSC | public |
+| Processed MAGE bundle (input of `pixi run reproduce`) | this project, GitHub release `data-v1` | CC BY 4.0 |
+
+Every input with its URL or accession, version, local path, download script and checksum: `metadata/sources.tsv` and
+`metadata/README.md`. No data is stored in this repository.
+
+**Data availability statement.** Raw RNA-seq reads are in the NCBI Sequence Read Archive under BioProject
+PRJNA851328. Genotypes are from the 1000 Genomes Project (T2T-CHM13v2.0 calls: Zenodo
+10.5281/zenodo.7612953; GRCh38 calls: IGSR, 20220422 release). The processed data needed to reproduce every result
+(normalised expression, covariates and genotype dosages of the compared variants, and the per-gene effect tables) are
+attached to release `data-v1` of this repository, with their sha256 checksums in `metadata/`. Code and environment:
+this repository (MIT).
+
+## How to cite
+
+See `CITATION.cff` (GitHub: "Cite this repository").
+
+## License
+
+Code: MIT (`LICENSE`). Documentation, report and figures: CC BY 4.0 (`LICENSE-docs.md`). The processed data bundle:
+CC BY 4.0. Input data keep the terms of their providers (table above).
+
+## Contact
+
+Questions and problems: open an issue on GitHub. Contributions: see `CONTRIBUTING.md`; everyone taking part follows
+`CODE_OF_CONDUCT.md`.
